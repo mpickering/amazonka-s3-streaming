@@ -139,10 +139,12 @@ streamUpload mChunkSize multiPartUploadDesc =
                 -> (Int, ByteString)
                 -> m (Maybe CompletedPart)
     multiUpload bucket key upId (partnum, buffer) = do
+      liftIO $ putStrLn $ "part " <> show partnum <> " " <> (show $ BS.length buffer)
       res <- liftAWS $ send $ uploadPart bucket key partnum upId (toBody $ HashedBytes (hash buffer) buffer)
       when (res ^. uprsResponseStatus /= 200) $ 
         fail "Failed to upload piece"
       logStr $ printf "\n**** Uploaded part %d" partnum
+      liftIO $ putStrLn $ "part " <> show partnum <> " done"
       return $ completedPart partnum <$> (res ^. uprsETag)
     
     -- collect all the parts
