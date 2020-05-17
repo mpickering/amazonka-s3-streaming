@@ -4,7 +4,7 @@ module Main where
 
 
 import Data.Conduit        ( runConduit, (.|) )
-import Data.Conduit.Binary ( sourceHandle )
+import Data.Conduit.Binary ( sourceHandleRangeWithBuffer )
 import Data.Text           ( pack )
 import Data.Functor        ( (<&>) )
 import Control.Lens        ( set )
@@ -35,7 +35,7 @@ main = do
           env <- newEnv creds <&> set envRegion reg
           hSetBuffering stdin (BlockBuffering Nothing)
           res <- runResourceT . runAWS env $ case file of
-                  "-" -> runConduit (sourceHandle stdin .| streamUpload Nothing (createMultipartUpload buck ky))
+                  "-" -> runConduit (sourceHandleRangeWithBuffer stdin Nothing Nothing (6 * 1024 * 1024)  .| streamUpload Nothing (createMultipartUpload buck ky))
                           >>= liftIO . either print print
                   _   -> concurrentUpload Nothing Nothing (FP file) (createMultipartUpload buck ky)
                           >>= liftIO . print

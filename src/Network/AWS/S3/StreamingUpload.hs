@@ -69,6 +69,7 @@ import Control.Monad.Catch      ( onException )
 import System.Mem               ( performGC )
 
 import Network.HTTP.Client ( defaultManagerSettings, managerConnCount, newManager )
+import Debug.Trace
 
 type ChunkSize = Int
 type NumThreads = Int
@@ -97,9 +98,7 @@ streamUpload :: (MonadUnliftIO m, MonadAWS m, MonadFail m, MonadResource m, Prim
              -> CreateMultipartUpload -- ^ Upload location
              -> ConduitT ByteString Void m (Either (AbortMultipartUploadResponse, SomeException) CompleteMultipartUploadResponse)
 streamUpload mChunkSize multiPartUploadDesc =
-  chunkConduit
-  .| mapC vectorToByteString
-  .| enumerateConduit
+  enumerateConduit
   .| startUpload
   where
     chunkSize :: ChunkSize
@@ -139,12 +138,12 @@ streamUpload mChunkSize multiPartUploadDesc =
                 -> (Int, ByteString)
                 -> m (Maybe CompletedPart)
     multiUpload bucket key upId (partnum, buffer) = do
-      liftIO $ putStrLn $ "part " <> show partnum <> " " <> (show $ BS.length buffer)
+      liftIO $ traceMarkerIO $ "part " <> show partnum <> " " <> (show $ BS.length buffer)
       res <- liftAWS $ send $ uploadPart bucket key partnum upId (toBody $ HashedBytes (hash buffer) buffer)
       when (res ^. uprsResponseStatus /= 200) $
         fail "Failed to upload piece"
       logStr $ printf "\n**** Uploaded part %d" partnum
-      liftIO $ putStrLn $ "part " <> show partnum <> " done"
+      liftIO $ traceMarkerIO $ "part " <> show partnum <> " done"
       return $ completedPart partnum <$> (res ^. uprsETag)
 
     -- collect all the parts
