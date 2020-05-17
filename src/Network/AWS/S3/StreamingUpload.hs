@@ -96,8 +96,8 @@ streamUpload :: (MonadUnliftIO m, MonadAWS m, MonadFail m, MonadResource m, Prim
              => Maybe ChunkSize -- ^ Optional chunk size
              -> CreateMultipartUpload -- ^ Upload location
              -> ConduitT ByteString Void m (Either (AbortMultipartUploadResponse, SomeException) CompleteMultipartUploadResponse)
-streamUpload mChunkSize multiPartUploadDesc = 
-  chunkConduit 
+streamUpload mChunkSize multiPartUploadDesc =
+  chunkConduit
   .| mapC vectorToByteString
   .| enumerateConduit
   .| startUpload
@@ -128,10 +128,10 @@ streamUpload mChunkSize multiPartUploadDesc =
           bucket    = multiPartUploadDesc  ^. cmuBucket
           key       = multiPartUploadDesc  ^. cmuKey
 
-      handleC (cancelMultiUploadConduit bucket key upId) $ 
-        concurrentMapM_ 10 3 (multiUpload bucket key upId) 
+      handleC (cancelMultiUploadConduit bucket key upId) $
+        concurrentMapM_ 10 3 (multiUpload bucket key upId)
         .| (finishMultiUploadConduit bucket key upId)
-    
+
     multiUpload :: (MonadUnliftIO m, MonadAWS m, MonadFail m, MonadResource m) =>
                    BucketName
                 -> ObjectKey
@@ -141,14 +141,14 @@ streamUpload mChunkSize multiPartUploadDesc =
     multiUpload bucket key upId (partnum, buffer) = do
       liftIO $ putStrLn $ "part " <> show partnum <> " " <> (show $ BS.length buffer)
       res <- liftAWS $ send $ uploadPart bucket key partnum upId (toBody $ HashedBytes (hash buffer) buffer)
-      when (res ^. uprsResponseStatus /= 200) $ 
+      when (res ^. uprsResponseStatus /= 200) $
         fail "Failed to upload piece"
       logStr $ printf "\n**** Uploaded part %d" partnum
       liftIO $ putStrLn $ "part " <> show partnum <> " done"
       return $ completedPart partnum <$> (res ^. uprsETag)
-    
+
     -- collect all the parts
-    finishMultiUploadConduit :: (MonadUnliftIO m, MonadAWS m) 
+    finishMultiUploadConduit :: (MonadUnliftIO m, MonadAWS m)
                              => BucketName
                              -> ObjectKey
                              -> Text
@@ -165,8 +165,8 @@ streamUpload mChunkSize multiPartUploadDesc =
     -- in case of an exception, return Left
     cancelMultiUploadConduit :: (MonadUnliftIO m, MonadAWS m, MonadFail m) =>
                                 BucketName
-                             -> ObjectKey 
-                             -> Text 
+                             -> ObjectKey
+                             -> Text
                              -> SomeException
                              -> ConduitT
                                   i
@@ -177,7 +177,7 @@ streamUpload mChunkSize multiPartUploadDesc =
       return $ Left (res, exc)
 
     -- split stream in chunks of chunkSize
-    chunkConduit :: (MonadUnliftIO m, MonadAWS m, MonadFail m, MonadResource m, PrimMonad m) 
+    chunkConduit :: (MonadUnliftIO m, MonadAWS m, MonadFail m, MonadResource m, PrimMonad m)
                  => ConduitT ByteString (VS.Vector Word8) m ()
     chunkConduit = vectorBuilder (fromIntegral chunkSize) mapM_CE
     {-# INLINE chunkConduit #-}

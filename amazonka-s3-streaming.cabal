@@ -40,7 +40,7 @@ library
 
 flag s3upload-exe
   Description: Whether to build the s3upload executable for uploading files using this library.
-  default: False
+  default: True
   manual: True
 
 source-repository head

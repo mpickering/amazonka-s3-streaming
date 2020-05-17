@@ -1,0 +1,20 @@
+packages: .
+
+
+source-repository-package
+    type: git
+    location: https://github.com/brendanhay/amazonka
+    subdir: amazonka
+    tag: ed7630edacc09e627ed0ee59126f4cdca0d73a0c
+
+source-repository-package
+    type: git
+    location: https://github.com/brendanhay/amazonka
+    subdir: amazonka-s3
+    tag: ed7630edacc09e627ed0ee59126f4cdca0d73a0c
+
+source-repository-package
+    type: git
+    location: https://github.com/brendanhay/amazonka
+    subdir: core
+    tag: ed7630edacc09e627ed0ee59126f4cdca0d73a0c
